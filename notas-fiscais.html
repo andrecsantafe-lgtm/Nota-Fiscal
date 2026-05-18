@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notas Fiscais — Santa Fé</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --verde: #1a6b3c;
+      --verde-claro: #2d9e5f;
+      --verde-bg: #e8f5ee;
+      --terra: #7a4f2e;
+      --amarelo: #e8a020;
+      --cinza: #5a5a5a;
+      --cinza-claro: #f2f2f0;
+      --borda: #d8d8d4;
+      --texto: #1a1a18;
+      --branco: #fafaf8;
+      --sombra: 0 2px 12px rgba(0,0,0,0.07);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--cinza-claro); color: var(--texto); min-height: 100vh; }
+
+    /* HEADER */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--verde); color: white;
+      padding: 0 20px; height: 54px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .header-titulo { font-family: 'DM Serif Display', serif; font-size: 19px; }
+    .header-sub { font-size: 10px; opacity: 0.72; margin-top: 1px; }
+
+    /* TABS */
+    .tabs-bar {
+      background: white; border-bottom: 1px solid var(--borda);
+      display: flex; position: sticky; top: 54px; z-index: 90;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    .tab-btn {
+      flex: 1; padding: 13px 8px; border: none; background: none;
+      font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+      color: var(--cinza); cursor: pointer;
+      border-bottom: 2.5px solid transparent; transition: all 0.18s;
+    }
+    .tab-btn.ativo { color: var(--verde); border-bottom-color: var(--verde); }
+    .tab-btn:hover { background: var(--verde-bg); }
+
+    /* MAIN */
+    .main { max-width: 860px; margin: 0 auto; padding: 20px 16px 100px; }
+    .tab-conteudo { display: none; }
+    .tab-conteudo.ativo { display: block; }
+
+    /* FILTROS */
+    .filtros-wrap { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+    .pills-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pill {
+      padding: 5px 13px; border-radius: 20px;
+      border: 1.5px solid var(--borda); background: white;
+      font-size: 12px; font-weight: 600; color: var(--cinza);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .pill.ativo { background: var(--verde); border-color: var(--verde); color: white; }
+    .pill:hover:not(.ativo) { border-color: var(--verde-claro); color: var(--verde-claro); }
+
+    /* GRUPO MÊS */
+    .mes-grupo { margin-bottom: 22px; }
+    .mes-cabecalho {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 7px 14px; background: var(--verde-bg);
+      border-left: 4px solid var(--verde); border-radius: 0 6px 6px 0;
+      margin-bottom: 10px;
+    }
+    .mes-nome { font-weight: 800; font-size: 13px; color: var(--verde); text-transform: uppercase; letter-spacing: 0.05em; }
+    .mes-total { font-weight: 700; font-size: 13px; color: var(--verde); }
+
+    /* CARD NOTA */
+    .nota-card {
+      background: white; border-radius: 10px; box-shadow: var(--sombra);
+      padding: 12px 14px; margin-bottom: 8px;
+      display: flex; gap: 12px; align-items: flex-start;
+      border: 1px solid var(--borda); transition: box-shadow 0.15s;
+    }
+    .nota-card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.1); }
+    .nota-foto {
+      width: 64px; height: 64px; border-radius: 7px;
+      object-fit: cover; border: 1px solid var(--borda);
+      flex-shrink: 0; cursor: pointer;
+    }
+    .nota-foto-placeholder {
+      width: 64px; height: 64px; border-radius: 7px;
+      background: var(--cinza-claro); border: 1px dashed var(--borda);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; flex-shrink: 0; color: var(--cinza);
+    }
+    .nota-body { flex: 1; min-width: 0; }
+    .nota-linha1 { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; flex-wrap: wrap; }
+    .nota-estab { font-weight: 700; font-size: 14px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .chip-tipo {
+      padding: 2px 8px; border-radius: 12px;
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.04em; flex-shrink: 0;
+    }
+    .chip-nf { background: #e8f5ee; color: var(--verde); }
+    .chip-cupom { background: #fff8e1; color: #e65100; }
+    .chip-recibo { background: #f3f0ff; color: #5e35b1; }
+    .nota-detalhe { font-size: 11px; color: var(--cinza); margin-bottom: 2px; }
+    .nota-rodape { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .nota-meta { font-size: 11px; color: #888; }
+    .nota-valor { font-size: 15px; font-weight: 800; color: var(--verde); }
+    .nota-acoes { display: flex; gap: 2px; margin-left: 4px; }
+    .btn-icon {
+      background: none; border: none; padding: 6px 7px;
+      border-radius: 6px; cursor: pointer; font-size: 14px;
+      color: var(--cinza); transition: all 0.15s;
+    }
+    .btn-icon:hover { background: var(--cinza-claro); }
+    .btn-icon.danger:hover { background: #ffebee; color: #c62828; }
+
+    /* FOOTER TOTAL */
+    .footer-total {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: white; border-top: 1px solid var(--borda);
+      padding: 10px 20px; display: flex;
+      justify-content: space-between; align-items: center;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.06); z-index: 80;
+    }
+    .footer-qtd { font-size: 12px; color: var(--cinza); font-weight: 600; }
+    .footer-valor-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+    .footer-label { font-size: 10px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+    .footer-valor { font-size: 17px; font-weight: 800; color: var(--verde); }
+
+    /* FAB */
+    .fab {
+      position: fixed; bottom: 58px; right: 20px;
+      width: 52px; height: 52px; border-radius: 50%;
+      background: var(--verde); color: white; border: none;
+      font-size: 26px; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(26,107,60,0.35); z-index: 85;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.18s;
+    }
+    .fab:hover { background: var(--verde-claro); transform: scale(1.05); }
+
+    /* PESSOAS */
+    .pessoas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+    .pessoa-card {
+      background: white; border-radius: 10px; box-shadow: var(--sombra);
+      padding: 18px 14px; display: flex; flex-direction: column;
+      align-items: center; gap: 6px; border: 1px solid var(--borda); text-align: center;
+    }
+    .pessoa-avatar {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: var(--verde); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800;
+    }
+    .pessoa-nome { font-weight: 700; font-size: 15px; }
+    .pessoa-cargo { font-size: 11px; color: var(--cinza); margin-top: -2px; }
+    .pessoa-acoes { display: flex; gap: 6px; margin-top: 6px; }
+    .btn-sm {
+      padding: 5px 12px; border-radius: 6px;
+      border: 1.5px solid var(--borda); background: white;
+      font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 600;
+      cursor: pointer; color: var(--cinza); transition: all 0.15s;
+    }
+    .btn-sm:hover { border-color: var(--verde); color: var(--verde); }
+    .btn-sm.danger:hover { border-color: #c62828; color: #c62828; }
+
+    /* BOTÃO ADICIONAR */
+    .btn-add {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 18px; border-radius: 8px;
+      background: var(--verde); color: white; border: none;
+      font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+      cursor: pointer; margin-bottom: 16px; transition: all 0.18s;
+    }
+    .btn-add:hover { background: var(--verde-claro); }
+
+    /* CONFIG */
+    .config-secao {
+      background: white; border-radius: 10px; box-shadow: var(--sombra);
+      padding: 20px; margin-bottom: 14px; border: 1px solid var(--borda);
+    }
+    .config-titulo {
+      font-weight: 800; font-size: 12px; color: var(--verde);
+      text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 14px;
+    }
+
+    /* FORMS */
+    .form-row { margin-bottom: 13px; }
+    .form-label {
+      display: block; font-size: 11px; font-weight: 700;
+      color: var(--cinza); text-transform: uppercase;
+      letter-spacing: 0.04em; margin-bottom: 5px;
+    }
+    .form-input {
+      width: 100%; padding: 9px 12px;
+      border: 1.5px solid var(--borda); border-radius: 7px;
+      font-family: 'DM Sans', sans-serif; font-size: 13px;
+      color: var(--texto); background: white; transition: border-color 0.15s;
+    }
+    .form-input:focus { outline: none; border-color: var(--verde); }
+    textarea.form-input { resize: vertical; }
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-grid-3-1 { display: grid; grid-template-columns: 3fr 1fr; gap: 12px; }
+
+    /* MODAIS */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.48); z-index: 200;
+      align-items: center; justify-content: center; padding: 16px;
+    }
+    .overlay.aberto { display: flex; }
+    .modal {
+      background: white; border-radius: 14px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+      width: 100%; max-width: 520px; max-height: 92vh;
+      overflow-y: auto; display: flex; flex-direction: column;
+    }
+    .modal-header {
+      padding: 16px 20px 12px; border-bottom: 1px solid var(--borda);
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; background: white; z-index: 1;
+      border-radius: 14px 14px 0 0;
+    }
+    .modal-titulo { font-family: 'DM Serif Display', serif; font-size: 17px; color: var(--verde); }
+    .btn-fechar {
+      background: none; border: none; font-size: 20px; cursor: pointer;
+      color: var(--cinza); padding: 2px 6px; border-radius: 6px; line-height: 1;
+    }
+    .btn-fechar:hover { background: var(--cinza-claro); }
+    .modal-body { padding: 18px 20px; flex: 1; }
+    .modal-footer {
+      padding: 12px 20px; border-top: 1px solid var(--borda);
+      display: flex; gap: 10px; justify-content: flex-end;
+      position: sticky; bottom: 0; background: white;
+      border-radius: 0 0 14px 14px;
+    }
+
+    /* BOTÕES */
+    .btn {
+      padding: 9px 20px; border-radius: 8px;
+      font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: all 0.15s; border: none;
+    }
+    .btn-primario { background: var(--verde); color: white; }
+    .btn-primario:hover { background: var(--verde-claro); }
+    .btn-secundario { background: var(--cinza-claro); color: var(--cinza); }
+    .btn-secundario:hover { background: var(--borda); }
+    .btn-perigo { background: #ffebee; color: #c62828; }
+    .btn-perigo:hover { background: #c62828; color: white; }
+
+    /* SEGMENTED CONTROL */
+    .seg-control { display: flex; border: 1.5px solid var(--borda); border-radius: 8px; overflow: hidden; }
+    .seg-btn {
+      flex: 1; padding: 8px 6px; border: none;
+      border-right: 1px solid var(--borda); background: white;
+      font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
+      color: var(--cinza); cursor: pointer; transition: all 0.15s;
+    }
+    .seg-btn:last-child { border-right: none; }
+    .seg-btn.ativo { background: var(--verde); color: white; }
+
+    /* FOTO */
+    .foto-area {
+      border: 2px dashed var(--borda); border-radius: 10px;
+      padding: 22px 16px; text-align: center; cursor: pointer;
+      transition: all 0.2s; background: var(--cinza-claro);
+    }
+    .foto-area:hover { border-color: var(--verde); background: var(--verde-bg); }
+    .foto-area-icon { font-size: 34px; margin-bottom: 6px; }
+    .foto-area-txt { font-size: 12px; color: var(--cinza); }
+    .foto-preview-wrap { position: relative; display: inline-block; width: 100%; text-align: center; }
+    .foto-preview { max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid var(--borda); }
+    .btn-trocar-foto {
+      position: absolute; top: 7px; right: 7px;
+      background: rgba(0,0,0,0.62); color: white; border: none;
+      border-radius: 6px; padding: 4px 10px; font-size: 11px;
+      font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif;
+    }
+
+    /* BTN IA */
+    .btn-ia {
+      width: 100%; padding: 11px; border-radius: 8px; border: none;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white; font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      margin-bottom: 14px; display: flex; align-items: center;
+      justify-content: center; gap: 8px; transition: all 0.2s;
+    }
+    .btn-ia:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+    .btn-ia:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    .ia-spinner {
+      display: none; width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.35); border-top-color: white;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* INFO BOX */
+    .info-box {
+      background: #fff8e1; border: 1px solid #ffe082; border-radius: 8px;
+      padding: 10px 14px; font-size: 11px; color: #5d4037;
+      margin-bottom: 12px; line-height: 1.6;
+    }
+
+    /* VAZIO */
+    .vazio { text-align: center; padding: 55px 20px; color: var(--cinza); }
+    .vazio-icon { font-size: 50px; margin-bottom: 12px; opacity: 0.35; }
+    .vazio-txt { font-size: 14px; font-weight: 700; }
+    .vazio-sub { font-size: 12px; opacity: 0.7; margin-top: 4px; }
+
+    /* MODAL FOTO AMPLIADA */
+    #foto-lightbox {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.88); z-index: 500;
+      align-items: center; justify-content: center; cursor: pointer;
+    }
+    #foto-lightbox.aberto { display: flex; }
+    #foto-lightbox img { max-width: 95vw; max-height: 92vh; border-radius: 8px; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 68px; left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: #222; color: white; padding: 10px 22px;
+      border-radius: 24px; font-size: 13px; font-weight: 600;
+      opacity: 0; transition: all 0.28s; z-index: 400;
+      pointer-events: none; white-space: nowrap; max-width: 90vw;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* BADGE CONTAGEM */
+    .badge-count {
+      display: inline-block; background: var(--verde);
+      color: white; border-radius: 12px; padding: 1px 7px;
+      font-size: 10px; font-weight: 700; margin-left: 5px;
+    }
+
+    @media (max-width: 500px) {
+      .form-grid-2 { grid-template-columns: 1fr; }
+      .form-grid-3-1 { grid-template-columns: 2fr 1fr; }
+      .pessoas-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="header-titulo">🧾 Notas Fiscais</div>
+    <div class="header-sub">Santa Fé Consultoria e Gestão Agronômica</div>
+  </div>
+</header>
+
+<div class="tabs-bar">
+  <button class="tab-btn ativo" onclick="mudarTab('notas')" id="tab-btn-notas">Notas</button>
+  <button class="tab-btn" onclick="mudarTab('pessoas')" id="tab-btn-pessoas">Pessoas</button>
+  <button class="tab-btn" onclick="mudarTab('config')" id="tab-btn-config">Config ⚙️</button>
+</div>
+
+<div class="main">
+
+  <!-- ── TAB NOTAS ── -->
+  <div class="tab-conteudo ativo" id="tab-notas">
+    <div class="filtros-wrap">
+      <div class="pills-row" id="pills-pessoa"></div>
+      <div class="pills-row" id="pills-tipo">
+        <button class="pill ativo" onclick="setFiltroTipo('',this)">Todos</button>
+        <button class="pill" onclick="setFiltroTipo('nf',this)">Nota Fiscal</button>
+        <button class="pill" onclick="setFiltroTipo('cupom',this)">Cupom Fiscal</button>
+        <button class="pill" onclick="setFiltroTipo('recibo',this)">Recibo</button>
+      </div>
+    </div>
+    <div id="lista-notas"></div>
+  </div>
+
+  <!-- ── TAB PESSOAS ── -->
+  <div class="tab-conteudo" id="tab-pessoas">
+    <button class="btn-add" onclick="abrirModalPessoa()">+ Adicionar Pessoa</button>
+    <div class="pessoas-grid" id="grid-pessoas"></div>
+  </div>
+
+  <!-- ── TAB CONFIG ── -->
+  <div class="tab-conteudo" id="tab-config">
+    <div class="config-secao">
+      <div class="config-titulo">Chave API — Anthropic (Claude)</div>
+      <div class="info-box">
+        A chave fica salva <b>apenas neste navegador</b> (localStorage). É necessária para extrair dados das fotos automaticamente com IA.<br>
+        Obtenha em: <b>console.anthropic.com</b> → Settings → API Keys → Create Key. Contas novas recebem <b>US$ 5 de crédito grátis</b> (~5.000 extrações).
+      </div>
+      <div class="form-row">
+        <label class="form-label">Chave API</label>
+        <div style="display:flex;gap:8px">
+          <input type="password" class="form-input" id="cfg-apikey" placeholder="sk-ant-api03-...">
+          <button class="btn btn-secundario" onclick="testarApiKey()" style="white-space:nowrap;flex-shrink:0">Testar</button>
+        </div>
+      </div>
+      <button class="btn btn-primario" onclick="salvarApiKey()">Salvar Chave</button>
+    </div>
+    <div class="config-secao">
+      <div class="config-titulo">Backup de Dados</div>
+      <p style="font-size:12px;color:var(--cinza);margin-bottom:14px">Exporte periodicamente para manter cópias de segurança das notas e fotos.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primario" onclick="exportarDados()">⬇ Exportar JSON</button>
+        <button class="btn btn-secundario" onclick="document.getElementById('inp-importar').click()">⬆ Importar JSON</button>
+        <input type="file" id="inp-importar" accept=".json" style="display:none" onchange="importarDados(event)">
+      </div>
+    </div>
+    <div class="config-secao">
+      <div class="config-titulo" style="color:#c62828">Zona de Perigo</div>
+      <p style="font-size:12px;color:var(--cinza);margin-bottom:14px">Esta ação apaga todas as notas. As pessoas cadastradas serão restauradas ao padrão.</p>
+      <button class="btn btn-perigo" onclick="limparTudo()">🗑 Limpar todos os dados</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER TOTAL -->
+<div class="footer-total" id="footer-total">
+  <span class="footer-qtd" id="footer-qtd">0 notas</span>
+  <div class="footer-valor-wrap">
+    <span class="footer-label">Total</span>
+    <span class="footer-valor" id="footer-valor">R$ 0,00</span>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fab-novo" onclick="abrirModalNota()" title="Nova nota">+</button>
+
+<!-- ────────────────────── MODAL NOTA ────────────────────────── -->
+<div class="overlay" id="overlay-nota" onclick="fecharOverlay('overlay-nota',event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-titulo" id="modal-nota-titulo">Nova Nota</div>
+      <button class="btn-fechar" onclick="fecharModal('overlay-nota')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">Responsável pela compra</label>
+        <select class="form-input" id="nota-pessoa"></select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Tipo de Documento</label>
+        <div class="seg-control" id="nota-tipo-seg">
+          <button class="seg-btn ativo" onclick="setTipoNota('nf',this)">Nota Fiscal</button>
+          <button class="seg-btn" onclick="setTipoNota('cupom',this)">Cupom Fiscal</button>
+          <button class="seg-btn" onclick="setTipoNota('recibo',this)">Recibo</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Foto do Documento</label>
+        <div id="foto-area-wrap">
+          <div class="foto-area" onclick="document.getElementById('inp-foto').click()">
+            <div class="foto-area-icon">📷</div>
+            <div class="foto-area-txt">Toque para tirar foto ou selecionar da galeria</div>
+          </div>
+        </div>
+        <input type="file" id="inp-foto" accept="image/*" capture="environment"
+               style="display:none" onchange="handleFoto(this)">
+      </div>
+      <button class="btn-ia" id="btn-ia" disabled onclick="extrairComIA()">
+        <span class="ia-spinner" id="ia-spinner"></span>
+        <span id="ia-txt">✨ Extrair dados com IA</span>
+      </button>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label">Data de Emissão</label>
+          <input type="date" class="form-input" id="nota-data">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Valor (R$)</label>
+          <input type="text" class="form-input" id="nota-valor" inputmode="decimal" placeholder="0,00">
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Estabelecimento / Fornecedor</label>
+        <input type="text" class="form-input" id="nota-estab" placeholder="Nome da loja ou empresa">
+      </div>
+      <div class="form-row">
+        <label class="form-label">CNPJ do Emitente</label>
+        <input type="text" class="form-input" id="nota-cnpj"
+               placeholder="00.000.000/0000-00"
+               oninput="aplicarMascaraCNPJ(this)" maxlength="18">
+      </div>
+      <div class="form-grid-3-1">
+        <div class="form-row">
+          <label class="form-label">Nº do Documento</label>
+          <input type="text" class="form-input" id="nota-num" placeholder="000001">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Série</label>
+          <input type="text" class="form-input" id="nota-serie" placeholder="1">
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Observações</label>
+        <textarea class="form-input" id="nota-obs" rows="3"
+                  placeholder="Descrição da compra, projeto vinculado..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secundario" onclick="fecharModal('overlay-nota')">Cancelar</button>
+      <button class="btn btn-primario" onclick="salvarNota()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ────────────────────── MODAL PESSOA ────────────────────────── -->
+<div class="overlay" id="overlay-pessoa" onclick="fecharOverlay('overlay-pessoa',event)">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-header">
+      <div class="modal-titulo" id="modal-pessoa-titulo">Nova Pessoa</div>
+      <button class="btn-fechar" onclick="fecharModal('overlay-pessoa')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">Nome</label>
+        <input type="text" class="form-input" id="pessoa-nome" placeholder="Nome completo">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Cargo / Função</label>
+        <input type="text" class="form-input" id="pessoa-cargo" placeholder="Ex: Sócio, Adm, Técnico...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secundario" onclick="fecharModal('overlay-pessoa')">Cancelar</button>
+      <button class="btn btn-primario" onclick="salvarPessoa()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX FOTO -->
+<div id="foto-lightbox" onclick="this.classList.remove('aberto')">
+  <img id="foto-lightbox-img" src="" alt="Foto do documento">
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Firebase ──────────────────────────────────────────────────────────────────
+firebase.initializeApp({
+  apiKey: "AIzaSyANQoS9upBapNh3pRJfTfH84hjcFDK6XCE",
+  authDomain: "notas-santa-fe.firebaseapp.com",
+  projectId: "notas-santa-fe",
+  storageBucket: "notas-santa-fe.firebasestorage.app",
+  messagingSenderId: "996009591835",
+  appId: "1:996009591835:web:6e93022ca0972126d024be"
+});
+var db = firebase.firestore();
+
+// ── Estado ────────────────────────────────────────────────────────────────────
+var STORAGE_KEY = 'sf_notas_v1';
+var dados = { pessoas: [], notas: [], apiKey: '', nextPessoaId: 1 };
+
+var filtroPessoaId = '';
+var filtroTipo = '';
+var notaEditandoId = null;
+var pessoaEditandoId = null;
+var notaTipoAtual = 'nf';
+var fotoBase64 = null;
+var fotoDataUrl = null;
+
+var PESSOAS_INICIAIS = [
+  { id: 1, nome: 'André',   cargo: 'Sócio' },
+  { id: 2, nome: 'Vitor',   cargo: 'Sócio' },
+  { id: 3, nome: 'Tiago',   cargo: 'Sócio' },
+  { id: 4, nome: 'Rafael',  cargo: 'Agricultura de Precisão' },
+  { id: 5, nome: 'Vitoria', cargo: 'Adm' },
+  { id: 6, nome: 'Jhon',    cargo: 'Drones e Mapas' },
+];
+
+var PROMPT_IA = 'Analise esta imagem de nota fiscal, cupom fiscal ou recibo brasileiro. '
+  + 'Extraia SOMENTE os seguintes dados em JSON válido, sem texto adicional, sem markdown:\n'
+  + '{"dataEmissao":"YYYY-MM-DD","valor":0.00,"numero":"","serie":"","cnpj":"","estabelecimento":""}\n'
+  + 'Regras: dataEmissao no formato YYYY-MM-DD; valor como número decimal; cnpj apenas os dígitos formatados como XX.XXX.XXX/XXXX-XX; '
+  + 'se um campo não for encontrado use null. Responda SOMENTE com o JSON, nada mais.';
+
+// ── Persistência ──────────────────────────────────────────────────────────────
+function salvarDados() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(dados)); }
+  catch(e) { mostrarToast('Erro ao salvar: ' + e.message); }
+}
+
+function carregarDados() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) dados = Object.assign({ pessoas: [], notas: [], apiKey: '', nextPessoaId: 1 }, JSON.parse(raw));
+  } catch(e) {}
+  if (!dados.pessoas || !dados.pessoas.length) {
+    dados.pessoas = PESSOAS_INICIAIS.map(function(p) { return Object.assign({}, p); });
+    dados.nextPessoaId = 7;
+    salvarDados();
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+function initApp() {
+  carregarDados();
+  document.getElementById('cfg-apikey').value = dados.apiKey || '';
+
+  // Listener em tempo real — Notas
+  db.collection('notas').onSnapshot(function(snap) {
+    snap.docChanges().forEach(function(change) {
+      if (change.type === 'added' || change.type === 'modified') {
+        var nota = change.doc.data();
+        var idx = dados.notas.findIndex(function(n) { return n.id === nota.id; });
+        if (idx >= 0) dados.notas[idx] = nota; else dados.notas.push(nota);
+      } else if (change.type === 'removed') {
+        dados.notas = dados.notas.filter(function(n) { return n.id !== change.doc.id; });
+      }
+    });
+    salvarDados();
+    renderPillsPessoa();
+    renderNotas();
+  }, function(err) { console.warn('Firestore notas:', err); });
+
+  // Listener em tempo real — Pessoas
+  db.collection('pessoas').onSnapshot(function(snap) {
+    if (snap.empty) {
+      // primeira vez: enviar pessoas iniciais para o Firebase
+      dados.pessoas.forEach(function(p) { db.collection('pessoas').doc(String(p.id)).set(p); });
+      return;
+    }
+    dados.pessoas = snap.docs.map(function(d) { return d.data(); });
+    dados.pessoas.sort(function(a, b) { return a.id - b.id; });
+    salvarDados();
+    renderPessoas();
+    renderPillsPessoa();
+  }, function(err) { console.warn('Firestore pessoas:', err); });
+
+  renderPillsPessoa();
+  renderNotas();
+  renderPessoas();
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function mudarTab(id) {
+  document.querySelectorAll('.tab-conteudo').forEach(function(el) { el.classList.remove('ativo'); });
+  document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('ativo'); });
+  document.getElementById('tab-' + id).classList.add('ativo');
+  document.getElementById('tab-btn-' + id).classList.add('ativo');
+  var footer = document.getElementById('footer-total');
+  var fab = document.getElementById('fab-novo');
+  var show = (id === 'notas');
+  footer.style.display = show ? 'flex' : 'none';
+  fab.style.display = show ? 'flex' : 'none';
+}
+
+// ── Filtros ───────────────────────────────────────────────────────────────────
+function renderPillsPessoa() {
+  var qtdPorPessoa = {};
+  dados.notas.forEach(function(n) { qtdPorPessoa[n.pessoaId] = (qtdPorPessoa[n.pessoaId] || 0) + 1; });
+  var html = '<button class="pill' + (!filtroPessoaId ? ' ativo' : '') + '" onclick="setFiltroPessoa(\'\')">Todos</button>';
+  dados.pessoas.forEach(function(p) {
+    var q = qtdPorPessoa[p.id] || 0;
+    html += '<button class="pill' + (filtroPessoaId == p.id ? ' ativo' : '') + '" onclick="setFiltroPessoa(' + p.id + ')">'
+      + H(p.nome) + (q ? '<span class="badge-count">' + q + '</span>' : '') + '</button>';
+  });
+  document.getElementById('pills-pessoa').innerHTML = html;
+}
+
+function setFiltroPessoa(id) {
+  filtroPessoaId = id;
+  renderPillsPessoa();
+  renderNotas();
+}
+
+function setFiltroTipo(tipo, btnEl) {
+  filtroTipo = tipo;
+  document.querySelectorAll('#pills-tipo .pill').forEach(function(el) { el.classList.remove('ativo'); });
+  if (btnEl) btnEl.classList.add('ativo');
+  renderNotas();
+}
+
+// ── Render Notas ──────────────────────────────────────────────────────────────
+function renderNotas() {
+  var notas = dados.notas.slice();
+  if (filtroPessoaId) notas = notas.filter(function(n) { return n.pessoaId == filtroPessoaId; });
+  if (filtroTipo) notas = notas.filter(function(n) { return n.tipo === filtroTipo; });
+
+  var total = notas.reduce(function(s, n) { return s + (pN(n.valor) || 0); }, 0);
+  document.getElementById('footer-qtd').textContent = notas.length + (notas.length === 1 ? ' nota' : ' notas');
+  document.getElementById('footer-valor').textContent = fR(total);
+
+  if (!notas.length) {
+    document.getElementById('lista-notas').innerHTML =
+      '<div class="vazio"><div class="vazio-icon">🧾</div>'
+      + '<div class="vazio-txt">Nenhuma nota registrada</div>'
+      + '<div class="vazio-sub">Toque em + para adicionar a primeira nota</div></div>';
+    return;
+  }
+
+  // ordenar descendente por data
+  notas.sort(function(a, b) {
+    var da = a.dataEmissao || a.criadoEm || '';
+    var db = b.dataEmissao || b.criadoEm || '';
+    return db < da ? -1 : 1;
+  });
+
+  // agrupar por YYYY-MM
+  var grupos = {}, ordem = [];
+  notas.forEach(function(n) {
+    var chave = (n.dataEmissao || (n.criadoEm || '').substring(0, 10) || '0000-00').substring(0, 7);
+    if (!grupos[chave]) { grupos[chave] = []; ordem.push(chave); }
+    grupos[chave].push(n);
+  });
+  ordem.sort(function(a, b) { return b < a ? -1 : 1; });
+
+  var MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  var html = '';
+  ordem.forEach(function(chave) {
+    var gNotas = grupos[chave];
+    var totalMes = gNotas.reduce(function(s, n) { return s + (pN(n.valor) || 0); }, 0);
+    var partes = chave.split('-');
+    var nomeMes = partes[1] ? (MESES[parseInt(partes[1]) - 1] || partes[1]) : '—';
+    html += '<div class="mes-grupo">';
+    html += '<div class="mes-cabecalho">'
+      + '<span class="mes-nome">' + nomeMes + ' ' + (partes[0] || '') + '</span>'
+      + '<span class="mes-total">' + fR(totalMes) + ' · ' + gNotas.length + ' nota' + (gNotas.length > 1 ? 's' : '') + '</span></div>';
+    gNotas.forEach(function(n) { html += renderCardNota(n); });
+    html += '</div>';
+  });
+  document.getElementById('lista-notas').innerHTML = html;
+}
+
+function renderCardNota(n) {
+  var pessoa = dados.pessoas.find(function(p) { return p.id == n.pessoaId; });
+  var LABELS = { nf: 'Nota Fiscal', cupom: 'Cupom Fiscal', recibo: 'Recibo' };
+  var CHIPS  = { nf: 'chip-nf', cupom: 'chip-cupom', recibo: 'chip-recibo' };
+  var fotoHtml = n.foto
+    ? '<img class="nota-foto" src="' + n.foto + '" onclick="verFoto(\'' + n.id + '\')" alt="Foto">'
+    : '<div class="nota-foto-placeholder">📄</div>';
+  var cnpj = n.cnpj ? '<div class="nota-detalhe">CNPJ: ' + H(n.cnpj) + '</div>' : '';
+  var numSerie = (n.numero || n.serie)
+    ? '<div class="nota-detalhe">' + (n.numero ? 'Nº ' + H(n.numero) : '') + (n.serie ? ' · Série ' + H(n.serie) : '') + '</div>' : '';
+  var metaParts = [];
+  if (n.dataEmissao) metaParts.push(fData(n.dataEmissao));
+  if (pessoa) metaParts.push('👤 ' + H(pessoa.nome));
+  if (n.aiExtracted) metaParts.push('✨');
+  return '<div class="nota-card">'
+    + fotoHtml
+    + '<div class="nota-body">'
+    + '<div class="nota-linha1">'
+    + '<span class="nota-estab">' + H(n.estabelecimento || '(sem estabelecimento)') + '</span>'
+    + '<span class="chip-tipo ' + (CHIPS[n.tipo] || 'chip-nf') + '">' + (LABELS[n.tipo] || 'NF') + '</span>'
+    + '<div class="nota-acoes">'
+    + '<button class="btn-icon" onclick="abrirModalNota(\'' + n.id + '\')" title="Editar">✏️</button>'
+    + '<button class="btn-icon danger" onclick="excluirNota(\'' + n.id + '\')" title="Excluir">🗑️</button>'
+    + '</div></div>'
+    + cnpj + numSerie
+    + '<div class="nota-rodape"><span class="nota-meta">' + metaParts.join(' · ') + '</span>'
+    + '<span class="nota-valor">' + fR(pN(n.valor)) + '</span></div>'
+    + '</div></div>';
+}
+
+// ── Modal Nota ─────────────────────────────────────────────────────────────────
+function abrirModalNota(id) {
+  notaEditandoId = id || null;
+  fotoBase64 = null; fotoDataUrl = null;
+
+  // popular select de pessoas
+  document.getElementById('nota-pessoa').innerHTML = dados.pessoas.map(function(p) {
+    return '<option value="' + p.id + '">' + H(p.nome) + '</option>';
+  }).join('');
+
+  // reset tipo
+  notaTipoAtual = 'nf';
+  document.querySelectorAll('#nota-tipo-seg .seg-btn').forEach(function(b) { b.classList.remove('ativo'); });
+  document.querySelector('#nota-tipo-seg .seg-btn').classList.add('ativo');
+
+  // reset foto
+  resetFotoArea();
+
+  // reset campos
+  ['nota-data','nota-valor','nota-estab','nota-cnpj','nota-num','nota-serie','nota-obs'].forEach(function(id) {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('inp-foto').value = '';
+  habilitarBtnIA(false);
+
+  if (id) {
+    var n = dados.notas.find(function(x) { return x.id === id; });
+    if (!n) return;
+    document.getElementById('modal-nota-titulo').textContent = 'Editar Nota';
+    document.getElementById('nota-pessoa').value = n.pessoaId;
+    setTipoNota(n.tipo || 'nf');
+    document.getElementById('nota-data').value = n.dataEmissao || '';
+    document.getElementById('nota-valor').value = n.valor != null ? String(n.valor).replace('.', ',') : '';
+    document.getElementById('nota-estab').value = n.estabelecimento || '';
+    document.getElementById('nota-cnpj').value = n.cnpj || '';
+    document.getElementById('nota-num').value = n.numero || '';
+    document.getElementById('nota-serie').value = n.serie || '';
+    document.getElementById('nota-obs').value = n.obs || '';
+    if (n.foto) { fotoDataUrl = n.foto; fotoBase64 = n.foto.split(',')[1] || null; mostrarFotoPreview(n.foto); habilitarBtnIA(true); }
+  } else {
+    document.getElementById('modal-nota-titulo').textContent = 'Nova Nota';
+    document.getElementById('nota-data').value = new Date().toISOString().substring(0, 10);
+  }
+  document.getElementById('overlay-nota').classList.add('aberto');
+}
+
+function fecharModal(overlayId) {
+  document.getElementById(overlayId).classList.remove('aberto');
+}
+
+function fecharOverlay(overlayId, evt) {
+  if (evt.target.id === overlayId) fecharModal(overlayId);
+}
+
+function setTipoNota(tipo) {
+  notaTipoAtual = tipo;
+  document.querySelectorAll('#nota-tipo-seg .seg-btn').forEach(function(b) {
+    var match = b.getAttribute('onclick') && b.getAttribute('onclick').indexOf("'" + tipo + "'") >= 0;
+    b.classList.toggle('ativo', match);
+  });
+}
+
+function resetFotoArea() {
+  document.getElementById('foto-area-wrap').innerHTML =
+    '<div class="foto-area" onclick="document.getElementById(\'inp-foto\').click()">'
+    + '<div class="foto-area-icon">📷</div>'
+    + '<div class="foto-area-txt">Toque para tirar foto ou selecionar da galeria</div>'
+    + '</div>';
+}
+
+function mostrarFotoPreview(dataUrl) {
+  document.getElementById('foto-area-wrap').innerHTML =
+    '<div class="foto-preview-wrap">'
+    + '<img class="foto-preview" src="' + dataUrl + '" alt="Preview">'
+    + '<button class="btn-trocar-foto" onclick="document.getElementById(\'inp-foto\').click()">Trocar foto</button>'
+    + '</div>';
+}
+
+function habilitarBtnIA(sim) {
+  document.getElementById('btn-ia').disabled = !sim;
+}
+
+function handleFoto(input) {
+  var file = input.files[0];
+  if (!file) return;
+  comprimirFoto(file, function(dataUrl) {
+    fotoDataUrl = dataUrl;
+    fotoBase64 = dataUrl.split(',')[1];
+    mostrarFotoPreview(dataUrl);
+    habilitarBtnIA(true);
+  });
+}
+
+function comprimirFoto(file, callback) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var MAX_W = 900;
+      var w = img.width, h = img.height;
+      if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      callback(canvas.toDataURL('image/jpeg', 0.70));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Extração IA ───────────────────────────────────────────────────────────────
+async function extrairComIA() {
+  if (!dados.apiKey) { mostrarToast('Configure a chave API na aba Config primeiro.'); return; }
+  if (!fotoBase64) { mostrarToast('Selecione uma foto primeiro.'); return; }
+  var btn = document.getElementById('btn-ia');
+  var spinner = document.getElementById('ia-spinner');
+  var txt = document.getElementById('ia-txt');
+  btn.disabled = true;
+  spinner.style.display = 'block';
+  txt.textContent = 'Extraindo...';
+  try {
+    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': dados.apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 400,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: fotoBase64 } },
+            { type: 'text', text: PROMPT_IA }
+          ]
+        }]
+      })
+    });
+    if (!resp.ok) {
+      var err = await resp.json().catch(function() { return {}; });
+      throw new Error((err.error && err.error.message) || 'Erro HTTP ' + resp.status);
+    }
+    var json = await resp.json();
+    var raw = (json.content && json.content[0] && json.content[0].text) || '{}';
+    raw = raw.replace(/```json|```/g, '').trim();
+    var ext = JSON.parse(raw);
+    if (ext.dataEmissao) document.getElementById('nota-data').value = ext.dataEmissao;
+    if (ext.valor != null && ext.valor !== 0) document.getElementById('nota-valor').value = String(ext.valor).replace('.', ',');
+    if (ext.estabelecimento) document.getElementById('nota-estab').value = ext.estabelecimento;
+    if (ext.cnpj) document.getElementById('nota-cnpj').value = ext.cnpj;
+    if (ext.numero) document.getElementById('nota-num').value = ext.numero;
+    if (ext.serie) document.getElementById('nota-serie').value = ext.serie;
+    // marcar que esta nota teve extração IA
+    document.getElementById('btn-ia').dataset.aiExtracted = '1';
+    mostrarToast('✅ Dados extraídos! Revise e salve.');
+  } catch(e) {
+    mostrarToast('Erro na extração: ' + e.message);
+  } finally {
+    spinner.style.display = 'none';
+    txt.textContent = '✨ Extrair dados com IA';
+    btn.disabled = false;
+  }
+}
+
+// ── Salvar / Excluir Nota ──────────────────────────────────────────────────────
+function salvarNota() {
+  var pessoaId = parseInt(document.getElementById('nota-pessoa').value);
+  var dataEmissao = document.getElementById('nota-data').value;
+  var valorStr = document.getElementById('nota-valor').value.replace(',', '.');
+  var valor = parseFloat(valorStr) || 0;
+  var estab = document.getElementById('nota-estab').value.trim();
+  var cnpj = document.getElementById('nota-cnpj').value.trim();
+  var num = document.getElementById('nota-num').value.trim();
+  var serie = document.getElementById('nota-serie').value.trim();
+  var obs = document.getElementById('nota-obs').value.trim();
+  var aiEx = document.getElementById('btn-ia').dataset.aiExtracted === '1';
+
+  if (!pessoaId) { mostrarToast('Selecione o responsável.'); return; }
+  if (!dataEmissao && !estab && valor === 0) { mostrarToast('Preencha ao menos data, estabelecimento ou valor.'); return; }
+
+  if (notaEditandoId) {
+    var idx = dados.notas.findIndex(function(n) { return n.id === notaEditandoId; });
+    if (idx >= 0) {
+      Object.assign(dados.notas[idx], {
+        pessoaId: pessoaId, tipo: notaTipoAtual,
+        dataEmissao: dataEmissao, valor: valor,
+        estabelecimento: estab, cnpj: cnpj,
+        numero: num, serie: serie, obs: obs,
+        foto: fotoDataUrl || dados.notas[idx].foto,
+        aiExtracted: aiEx || dados.notas[idx].aiExtracted
+      });
+    }
+  } else {
+    dados.notas.push({
+      id: 'nf_' + Date.now(),
+      pessoaId: pessoaId, tipo: notaTipoAtual,
+      foto: fotoDataUrl || null,
+      dataEmissao: dataEmissao, valor: valor,
+      estabelecimento: estab, cnpj: cnpj,
+      numero: num, serie: serie, obs: obs,
+      criadoEm: new Date().toISOString(),
+      aiExtracted: aiEx
+    });
+  }
+  salvarDados();
+  db.collection('notas').doc(notaEditandoId || dados.notas[dados.notas.length-1].id).set(
+    notaEditandoId ? dados.notas.find(function(n){return n.id===notaEditandoId;}) : dados.notas[dados.notas.length-1]
+  ).catch(function(e){ console.warn('Firestore save nota:', e); });
+  fecharModal('overlay-nota');
+  renderPillsPessoa();
+  renderNotas();
+  mostrarToast(notaEditandoId ? 'Nota atualizada.' : '✅ Nota salva!');
+}
+
+function excluirNota(id) {
+  if (!confirm('Excluir esta nota? A ação não pode ser desfeita.')) return;
+  dados.notas = dados.notas.filter(function(n) { return n.id !== id; });
+  salvarDados();
+  db.collection('notas').doc(id).delete().catch(function(e){ console.warn('Firestore delete nota:', e); });
+  renderPillsPessoa();
+  renderNotas();
+  mostrarToast('Nota excluída.');
+}
+
+function verFoto(notaId) {
+  var n = dados.notas.find(function(x) { return x.id === notaId; });
+  if (!n || !n.foto) return;
+  document.getElementById('foto-lightbox-img').src = n.foto;
+  document.getElementById('foto-lightbox').classList.add('aberto');
+}
+
+// ── Modal Pessoa ───────────────────────────────────────────────────────────────
+function abrirModalPessoa(id) {
+  pessoaEditandoId = id || null;
+  document.getElementById('pessoa-nome').value = '';
+  document.getElementById('pessoa-cargo').value = '';
+  if (id) {
+    var p = dados.pessoas.find(function(x) { return x.id == id; });
+    if (!p) return;
+    document.getElementById('modal-pessoa-titulo').textContent = 'Editar Pessoa';
+    document.getElementById('pessoa-nome').value = p.nome;
+    document.getElementById('pessoa-cargo').value = p.cargo || '';
+  } else {
+    document.getElementById('modal-pessoa-titulo').textContent = 'Nova Pessoa';
+  }
+  document.getElementById('overlay-pessoa').classList.add('aberto');
+}
+
+function salvarPessoa() {
+  var nome = document.getElementById('pessoa-nome').value.trim();
+  var cargo = document.getElementById('pessoa-cargo').value.trim();
+  if (!nome) { mostrarToast('Informe o nome.'); return; }
+  if (pessoaEditandoId) {
+    var p = dados.pessoas.find(function(x) { return x.id == pessoaEditandoId; });
+    if (p) { p.nome = nome; p.cargo = cargo; }
+  } else {
+    dados.pessoas.push({ id: dados.nextPessoaId++, nome: nome, cargo: cargo });
+  }
+  salvarDados();
+  var p = pessoaEditandoId ? dados.pessoas.find(function(x){return x.id==pessoaEditandoId;}) : dados.pessoas[dados.pessoas.length-1];
+  if (p) db.collection('pessoas').doc(String(p.id)).set(p).catch(function(e){ console.warn('Firestore save pessoa:', e); });
+  fecharModal('overlay-pessoa');
+  renderPessoas();
+  renderPillsPessoa();
+  mostrarToast(pessoaEditandoId ? 'Pessoa atualizada.' : 'Pessoa adicionada!');
+}
+
+function excluirPessoa(id) {
+  var qtd = dados.notas.filter(function(n) { return n.pessoaId == id; }).length;
+  var msg = qtd
+    ? 'Esta pessoa tem ' + qtd + ' nota(s). As notas ficarão sem responsável. Excluir mesmo assim?'
+    : 'Excluir esta pessoa?';
+  if (!confirm(msg)) return;
+  dados.pessoas = dados.pessoas.filter(function(p) { return p.id != id; });
+  salvarDados();
+  renderPessoas();
+  renderPillsPessoa();
+  renderNotas();
+  mostrarToast('Pessoa removida.');
+}
+
+function renderPessoas() {
+  var grid = document.getElementById('grid-pessoas');
+  if (!dados.pessoas.length) {
+    grid.innerHTML = '<p style="color:var(--cinza);font-size:13px">Nenhuma pessoa cadastrada.</p>';
+    return;
+  }
+  grid.innerHTML = dados.pessoas.map(function(p) {
+    var iniciais = p.nome.split(' ').slice(0, 2).map(function(w) { return w[0].toUpperCase(); }).join('');
+    var qtd = dados.notas.filter(function(n) { return n.pessoaId == p.id; }).length;
+    return '<div class="pessoa-card">'
+      + '<div class="pessoa-avatar">' + iniciais + '</div>'
+      + '<div class="pessoa-nome">' + H(p.nome) + '</div>'
+      + '<div class="pessoa-cargo">' + H(p.cargo || '—') + (qtd ? ' · ' + qtd + ' nota' + (qtd > 1 ? 's' : '') : '') + '</div>'
+      + '<div class="pessoa-acoes">'
+      + '<button class="btn-sm" onclick="abrirModalPessoa(' + p.id + ')">✏️ Editar</button>'
+      + '<button class="btn-sm danger" onclick="excluirPessoa(' + p.id + ')">🗑️</button>'
+      + '</div></div>';
+  }).join('');
+}
+
+// ── Config ─────────────────────────────────────────────────────────────────────
+function salvarApiKey() {
+  dados.apiKey = document.getElementById('cfg-apikey').value.trim();
+  salvarDados();
+  mostrarToast('Chave API salva.');
+}
+
+async function testarApiKey() {
+  var key = document.getElementById('cfg-apikey').value.trim();
+  if (!key) { mostrarToast('Insira a chave primeiro.'); return; }
+  mostrarToast('Testando conexão...');
+  try {
+    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 5,
+        messages: [{ role: 'user', content: 'ok' }]
+      })
+    });
+    if (resp.ok) {
+      mostrarToast('✅ Chave válida! IA pronta para uso.');
+    } else {
+      var err = await resp.json().catch(function() { return {}; });
+      mostrarToast('❌ ' + ((err.error && err.error.message) || 'Chave inválida (HTTP ' + resp.status + ')'));
+    }
+  } catch(e) { mostrarToast('Erro de conexão: ' + e.message); }
+}
+
+function exportarDados() {
+  var d = new Date().toISOString().substring(0, 10);
+  var payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    pessoas: dados.pessoas,
+    notas: dados.notas
+  };
+  var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'notas-fiscais-' + d + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function() { URL.revokeObjectURL(a.href); }, 2000);
+  mostrarToast('Exportado: notas-fiscais-' + d + '.json');
+}
+
+function importarDados(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var payload;
+    try { payload = JSON.parse(e.target.result); } catch(ex) { mostrarToast('Arquivo JSON inválido.'); return; }
+    if (!payload || !Array.isArray(payload.notas)) { mostrarToast('Formato não reconhecido. Use arquivo exportado por este app.'); return; }
+    var n = 0, skip = 0;
+    (payload.notas || []).forEach(function(nota) {
+      if (!nota.id) { skip++; return; }
+      if (dados.notas.some(function(x) { return x.id === nota.id; })) { skip++; return; }
+      dados.notas.push(nota); n++;
+    });
+    salvarDados();
+    renderPillsPessoa();
+    renderNotas();
+    mostrarToast(n + ' nota(s) importada(s)' + (skip ? ' · ' + skip + ' ignorada(s)' : '') + '.');
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function limparTudo() {
+  if (!confirm('Apagar TODAS as notas? Esta ação não pode ser desfeita.')) return;
+  if (!confirm('Confirma? Todas as notas e fotos serão perdidas permanentemente.')) return;
+  dados.notas = [];
+  dados.pessoas = PESSOAS_INICIAIS.map(function(p) { return Object.assign({}, p); });
+  dados.nextPessoaId = 7;
+  salvarDados();
+  renderPillsPessoa();
+  renderNotas();
+  renderPessoas();
+  mostrarToast('Dados apagados. Pessoas iniciais restauradas.');
+}
+
+// ── Utilitários ───────────────────────────────────────────────────────────────
+function H(s) {
+  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function fR(v) {
+  return 'R$ ' + (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fData(s) {
+  if (!s) return '';
+  var p = s.split('-');
+  return (p[2] || '') + '/' + (p[1] || '') + '/' + (p[0] || '');
+}
+
+function pN(s) {
+  if (typeof s === 'number') return s;
+  return parseFloat(String(s || '').replace(',', '.')) || 0;
+}
+
+function aplicarMascaraCNPJ(input) {
+  var v = input.value.replace(/\D/g, '').substring(0, 14);
+  if (v.length > 12)      v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2})/, '$1.$2.$3/$4-$5');
+  else if (v.length > 8)  v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{1,4})/,        '$1.$2.$3/$4');
+  else if (v.length > 5)  v = v.replace(/^(\d{2})(\d{3})(\d{0,3})/,               '$1.$2.$3');
+  else if (v.length > 2)  v = v.replace(/^(\d{2})(\d{0,3})/,                      '$1.$2');
+  input.value = v;
+}
+
+var _toastTimer;
+function mostrarToast(msg) {
+  var toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function() { toast.classList.remove('show'); }, 3200);
+}
+
+// ── Start ─────────────────────────────────────────────────────────────────────
+initApp();
+</script>
+</body>
+</html>
