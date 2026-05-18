@@ -80,11 +80,27 @@
     /* CARD NOTA */
     .nota-card {
       background: white; border-radius: 10px; box-shadow: var(--sombra);
-      padding: 12px 14px; margin-bottom: 8px;
-      display: flex; gap: 12px; align-items: flex-start;
+      margin-bottom: 8px;
       border: 1px solid var(--borda); transition: box-shadow 0.15s;
+      overflow: hidden;
     }
     .nota-card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.1); }
+    .nota-card-top { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; }
+    .btn-toggle-det {
+      width: 100%; padding: 6px 14px;
+      border: none; border-top: 1px solid var(--borda);
+      background: var(--cinza-claro);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px; font-weight: 600; color: var(--cinza);
+      cursor: pointer; text-align: left; transition: background 0.15s;
+    }
+    .btn-toggle-det:hover { background: var(--verde-bg); color: var(--verde); }
+    .nota-detalhes { display: none; padding: 12px 14px; border-top: 1px solid var(--borda); background: #fafaf8; font-size: 12px; }
+    .det-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 4px 0; border-bottom: 1px dashed var(--borda); }
+    .det-row:last-child { border-bottom: none; }
+    .det-label { color: var(--cinza); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; flex-shrink: 0; margin-right: 8px; }
+    .det-value { color: var(--texto); font-weight: 500; text-align: right; max-width: 65%; word-break: break-word; }
+    .chip-despesa { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; background: #e3f2fd; color: #1565c0; margin-top: 3px; }
     .nota-foto {
       width: 64px; height: 64px; border-radius: 7px;
       object-fit: cover; border: 1px solid var(--borda);
@@ -415,6 +431,15 @@
       </div>
     </div>
     <div class="config-secao">
+      <div class="config-titulo">Tipos de Despesa</div>
+      <p style="font-size:12px;color:var(--cinza);margin-bottom:14px">Categorias para classificar as notas. Personalize conforme a necessidade.</p>
+      <div id="config-tipos-despesa" style="margin-bottom:10px"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" class="form-input" id="novo-tipo-input" placeholder="Ex: Hotel, Material de Escritório...">
+        <button class="btn btn-primario" onclick="adicionarTipoDespesa()" style="white-space:nowrap;flex-shrink:0">+ Adicionar</button>
+      </div>
+    </div>
+    <div class="config-secao">
       <div class="config-titulo" style="color:#c62828">Zona de Perigo</div>
       <p style="font-size:12px;color:var(--cinza);margin-bottom:14px">Esta ação apaga todas as notas. As pessoas cadastradas serão restauradas ao padrão.</p>
       <button class="btn btn-perigo" onclick="limparTudo()">🗑 Limpar todos os dados</button>
@@ -454,6 +479,12 @@
           <button class="seg-btn" onclick="setTipoNota('cupom',this)">Cupom Fiscal</button>
           <button class="seg-btn" onclick="setTipoNota('recibo',this)">Recibo</button>
         </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Tipo de Despesa</label>
+        <select class="form-input" id="nota-tipodespesa">
+          <option value="">— Selecione (opcional) —</option>
+        </select>
       </div>
       <div class="form-row">
         <label class="form-label">Foto do Documento</label>
@@ -559,7 +590,7 @@ var db = firebase.firestore();
 
 // ── Estado ────────────────────────────────────────────────────────────────────
 var STORAGE_KEY = 'sf_notas_v1';
-var dados = { pessoas: [], notas: [], apiKey: '', nextPessoaId: 1 };
+var dados = { pessoas: [], notas: [], apiKey: '', nextPessoaId: 1, tiposDespesa: [] };
 
 var filtroPessoaId = '';
 var filtroTipo = '';
@@ -568,6 +599,8 @@ var pessoaEditandoId = null;
 var notaTipoAtual = 'nf';
 var fotoBase64 = null;
 var fotoDataUrl = null;
+
+var TIPOS_DESPESA_INICIAIS = ['Combustível', 'Alimentação', 'Pedágio', 'Manutenção de Veículos'];
 
 var PESSOAS_INICIAIS = [
   { id: 1, nome: 'André',   cargo: 'Sócio' },
@@ -598,8 +631,11 @@ function carregarDados() {
   if (!dados.pessoas || !dados.pessoas.length) {
     dados.pessoas = PESSOAS_INICIAIS.map(function(p) { return Object.assign({}, p); });
     dados.nextPessoaId = 7;
-    salvarDados();
   }
+  if (!dados.tiposDespesa || !dados.tiposDespesa.length) {
+    dados.tiposDespesa = TIPOS_DESPESA_INICIAIS.slice();
+  }
+  salvarDados();
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -640,6 +676,7 @@ function initApp() {
   renderPillsPessoa();
   renderNotas();
   renderPessoas();
+  renderTiposDespesa();
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -653,6 +690,7 @@ function mudarTab(id) {
   var show = (id === 'notas');
   footer.style.display = show ? 'flex' : 'none';
   fab.style.display = show ? 'flex' : 'none';
+  if (id === 'config') renderTiposDespesa();
 }
 
 // ── Filtros ───────────────────────────────────────────────────────────────────
@@ -742,11 +780,28 @@ function renderCardNota(n) {
   var cnpj = n.cnpj ? '<div class="nota-detalhe">CNPJ: ' + H(n.cnpj) + '</div>' : '';
   var numSerie = (n.numero || n.serie)
     ? '<div class="nota-detalhe">' + (n.numero ? 'Nº ' + H(n.numero) : '') + (n.serie ? ' · Série ' + H(n.serie) : '') + '</div>' : '';
+  var despesaChip = n.tipoDespesa ? '<div><span class="chip-despesa">' + H(n.tipoDespesa) + '</span></div>' : '';
   var metaParts = [];
   if (n.dataEmissao) metaParts.push(fData(n.dataEmissao));
   if (pessoa) metaParts.push('👤 ' + H(pessoa.nome));
   if (n.aiExtracted) metaParts.push('✨');
+
+  // Linhas do painel de detalhes
+  var detRows = '';
+  detRows += detRow('Tipo Doc.', LABELS[n.tipo] || 'Nota Fiscal');
+  if (n.tipoDespesa) detRows += detRow('Tipo Despesa', n.tipoDespesa);
+  if (pessoa) detRows += detRow('Responsável', pessoa.nome);
+  if (n.dataEmissao) detRows += detRow('Data Emissão', fData(n.dataEmissao));
+  detRows += detRow('Valor', fR(pN(n.valor)));
+  if (n.estabelecimento) detRows += detRow('Estabelecimento', n.estabelecimento);
+  if (n.cnpj) detRows += detRow('CNPJ', n.cnpj);
+  if (n.numero) detRows += detRow('Nº Documento', n.numero + (n.serie ? ' · Série ' + n.serie : ''));
+  if (n.obs) detRows += detRow('Observações', n.obs);
+  detRows += detRow('Registrado em', n.criadoEm ? fData(n.criadoEm.substring(0,10)) : '—');
+  if (n.aiExtracted) detRows += detRow('Extração IA', '✨ Sim');
+
   return '<div class="nota-card">'
+    + '<div class="nota-card-top">'
     + fotoHtml
     + '<div class="nota-body">'
     + '<div class="nota-linha1">'
@@ -756,10 +811,27 @@ function renderCardNota(n) {
     + '<button class="btn-icon" onclick="abrirModalNota(\'' + n.id + '\')" title="Editar">✏️</button>'
     + '<button class="btn-icon danger" onclick="excluirNota(\'' + n.id + '\')" title="Excluir">🗑️</button>'
     + '</div></div>'
-    + cnpj + numSerie
+    + cnpj + numSerie + despesaChip
     + '<div class="nota-rodape"><span class="nota-meta">' + metaParts.join(' · ') + '</span>'
     + '<span class="nota-valor">' + fR(pN(n.valor)) + '</span></div>'
-    + '</div></div>';
+    + '</div></div>'
+    + '<button class="btn-toggle-det" onclick="toggleDetalhes(\'' + n.id + '\')">'
+    + '<span id="det-lbl-' + n.id + '">▼ Visualizar dados</span></button>'
+    + '<div class="nota-detalhes" id="nota-det-' + n.id + '">' + detRows + '</div>'
+    + '</div>';
+}
+
+function detRow(label, value) {
+  return '<div class="det-row"><span class="det-label">' + H(label) + '</span><span class="det-value">' + H(String(value || '')) + '</span></div>';
+}
+
+function toggleDetalhes(id) {
+  var det = document.getElementById('nota-det-' + id);
+  var lbl = document.getElementById('det-lbl-' + id);
+  if (!det) return;
+  var aberto = det.style.display === 'block';
+  det.style.display = aberto ? 'none' : 'block';
+  lbl.textContent = aberto ? '▼ Visualizar dados' : '▲ Desvisualizar dados';
 }
 
 // ── Modal Nota ─────────────────────────────────────────────────────────────────
@@ -780,10 +852,16 @@ function abrirModalNota(id) {
   // reset foto
   resetFotoArea();
 
+  // popular select tipos de despesa
+  var selDespesa = document.getElementById('nota-tipodespesa');
+  selDespesa.innerHTML = '<option value="">— Selecione (opcional) —</option>'
+    + dados.tiposDespesa.map(function(t) { return '<option value="' + H(t) + '">' + H(t) + '</option>'; }).join('');
+
   // reset campos
   ['nota-data','nota-valor','nota-estab','nota-cnpj','nota-num','nota-serie','nota-obs'].forEach(function(id) {
     document.getElementById(id).value = '';
   });
+  selDespesa.value = '';
   document.getElementById('inp-foto').value = '';
   habilitarBtnIA(false);
 
@@ -800,6 +878,7 @@ function abrirModalNota(id) {
     document.getElementById('nota-num').value = n.numero || '';
     document.getElementById('nota-serie').value = n.serie || '';
     document.getElementById('nota-obs').value = n.obs || '';
+    selDespesa.value = n.tipoDespesa || '';
     if (n.foto) { fotoDataUrl = n.foto; fotoBase64 = n.foto.split(',')[1] || null; mostrarFotoPreview(n.foto); habilitarBtnIA(true); }
   } else {
     document.getElementById('modal-nota-titulo').textContent = 'Nova Nota';
@@ -940,6 +1019,7 @@ function salvarNota() {
   var num = document.getElementById('nota-num').value.trim();
   var serie = document.getElementById('nota-serie').value.trim();
   var obs = document.getElementById('nota-obs').value.trim();
+  var tipoDespesa = document.getElementById('nota-tipodespesa').value;
   var aiEx = document.getElementById('btn-ia').dataset.aiExtracted === '1';
 
   if (!pessoaId) { mostrarToast('Selecione o responsável.'); return; }
@@ -950,6 +1030,7 @@ function salvarNota() {
     if (idx >= 0) {
       Object.assign(dados.notas[idx], {
         pessoaId: pessoaId, tipo: notaTipoAtual,
+        tipoDespesa: tipoDespesa,
         dataEmissao: dataEmissao, valor: valor,
         estabelecimento: estab, cnpj: cnpj,
         numero: num, serie: serie, obs: obs,
@@ -961,6 +1042,7 @@ function salvarNota() {
     dados.notas.push({
       id: 'nf_' + Date.now(),
       pessoaId: pessoaId, tipo: notaTipoAtual,
+      tipoDespesa: tipoDespesa,
       foto: fotoDataUrl || null,
       dataEmissao: dataEmissao, valor: valor,
       estabelecimento: estab, cnpj: cnpj,
@@ -1151,6 +1233,43 @@ function limparTudo() {
   renderNotas();
   renderPessoas();
   mostrarToast('Dados apagados. Pessoas iniciais restauradas.');
+}
+
+// ── Tipos de Despesa ──────────────────────────────────────────────────────────
+function renderTiposDespesa() {
+  var el = document.getElementById('config-tipos-despesa');
+  if (!el) return;
+  if (!dados.tiposDespesa.length) {
+    el.innerHTML = '<p style="font-size:12px;color:var(--cinza);margin-bottom:8px">Nenhum tipo cadastrado.</p>';
+    return;
+  }
+  el.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">'
+    + dados.tiposDespesa.map(function(t, i) {
+      return '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--verde-bg);border:1px solid var(--verde);border-radius:16px;padding:4px 10px;font-size:12px;font-weight:600;color:var(--verde)">'
+        + H(t)
+        + '<button onclick="excluirTipoDespesa(' + i + ')" style="background:none;border:none;cursor:pointer;color:var(--verde);font-size:14px;padding:0 0 0 4px;line-height:1" title="Remover">×</button>'
+        + '</span>';
+    }).join('') + '</div>';
+}
+
+function adicionarTipoDespesa() {
+  var inp = document.getElementById('novo-tipo-input');
+  var t = (inp.value || '').trim();
+  if (!t) { mostrarToast('Digite o nome do tipo.'); return; }
+  if (dados.tiposDespesa.indexOf(t) >= 0) { mostrarToast('Tipo já existe.'); return; }
+  dados.tiposDespesa.push(t);
+  salvarDados();
+  inp.value = '';
+  renderTiposDespesa();
+  mostrarToast('Tipo adicionado!');
+}
+
+function excluirTipoDespesa(idx) {
+  if (!confirm('Remover "' + dados.tiposDespesa[idx] + '"?')) return;
+  dados.tiposDespesa.splice(idx, 1);
+  salvarDados();
+  renderTiposDespesa();
+  mostrarToast('Tipo removido.');
 }
 
 // ── Utilitários ───────────────────────────────────────────────────────────────
